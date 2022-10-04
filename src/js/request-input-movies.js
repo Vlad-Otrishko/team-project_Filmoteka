@@ -6,6 +6,8 @@ import objectTransformations from './objectTransformations';
 import resetRender from './resetRender';
 import { popularMovies } from './request-popular-movies'
 
+
+
 const { renderMoviesList, clearGalleryContainer } = resetRender;
 const finderQuery = new ApiService();
 const changeLoader = new Loader('.loader');
@@ -27,7 +29,7 @@ function onSearchMovie(event) {
   const searchQuery = event.target.value;
   let newSearchQuery = searchQuery.trim();
 
-  // для возврата текуйщей страницы
+  // для возврата текущей страницы
   if (newSearchQuery === '') {
     renderMoviesList(currentPageArray);
     changeLoader.clearLoader();
@@ -37,8 +39,8 @@ function onSearchMovie(event) {
     // finderQuery.searchType = 0;
     // finderQuery.searchGenres();
 
-    window.options.totalItems = +JSON.parse(localStorage.getItem('TotalPagesInLastSearchResult'));
-    window.pagination.reset(+JSON.parse(localStorage.getItem('TotalPagesInLastSearchResult')) * 20);
+    // options.totalItems = +JSON.parse(localStorage.getItem('TotalPagesInLastSearchResult'));
+    // pagination.reset(+JSON.parse(localStorage.getItem('TotalPagesInLastSearchResult')) * 20);
     return;
   }
 
@@ -48,9 +50,11 @@ function onSearchMovie(event) {
   finderQuery
     .searchMovies()
     .then(res => {
-      window.options.totalItems = res.total_results;
-      //console.log(window.options);
-      window.pagination.reset(res.total_results); // pagination.movePageTo(pageNumber);
+      if (res.total_results > 10000) {
+        pagination.reset(10000);
+      } else {
+        pagination.reset(res.total_results);
+      }
       return res;
     })
     .then(({ results }) => {

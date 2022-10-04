@@ -1,7 +1,14 @@
 import ApiService from './apiService.js';
 import createGenresMenu from './request-genres';
+import resetRender from './resetRender';
+import Loader from './loader.js';
+import objectTransformations from './objectTransformations.js';
 
-const genresMenuRef = document.querySelector('#genres_menu');
+
+const genresMenuRef = document.querySelector('#genre');
+const { renderMoviesList, clearGalleryContainer } = resetRender;
+const changeLoader = new Loader('.loader');
+
 
 const newApiService = new ApiService();
 
@@ -11,7 +18,7 @@ const refs = {
   homeBtn: document.getElementById('btn-home'),
   libraryBtn: document.getElementById('btn-library'),
   input: document.querySelector('.search__input'),
-  inputGenres: document.getElementById('form-for-genre'),
+  inputGenresLabel: document.querySelector('.select-wrapper'),
   watchedBtn: document.getElementById('liberary').firstElementChild,
   queueBtn: document.getElementById('liberary').lastElementChild,
   // footer
@@ -20,7 +27,6 @@ const refs = {
   footerThirdText: document.getElementById('footer__third-text'),
   footerTeamText: document.querySelector('#open_taem'),
 };
-
 refs.switchBtn.checked = Boolean(localStorage.getItem('language')); // Задаем кнопке сохраненное ранее значение
 
 if (!refs.switchBtn.checked) {
@@ -43,20 +49,46 @@ function changeLanguage(event) {
     translateToRussian();
   }
 }
+function displayChanges() {
+  genresMenuRef.innerHTML = '';
+  newApiService.searchGenres().then(() => createGenresMenu());
+
+  changeLoader.addLoader();
+  clearGalleryContainer();
+
+  newApiService.searchType = localStorage.getItem('LastSearchIndex');
+  newApiService.searchRequest = localStorage.getItem('LastQuery');
+  newApiService.pageNumber = localStorage.getItem('LastPage');
+  newApiService
+    .searchMovies()
+    .then(({ results }) => {
+      if (newApiService.searchType === 0 && results.total_results > 20000) {
+        pagination.reset(20000);
+      } else if (results.total_results > 10000) {
+        pagination.reset(10000);
+      } else {
+        pagination.reset(results.total_results);
+      }
+      pagination.movePageTo(localStorage.getItem('LastPage'));
+      return objectTransformations(results);
+    })
+    .then(data => {
+      localStorage.setItem('LastSearchResults', JSON.stringify(data));
+      renderMoviesList(data);
+      changeLoader.clearLoader();
+    })
+    .catch(err => console.warn(err));
+}
 
 function translateToEnglish() {
-  newApiService.searchGenres();
-
-  setTimeout(() => {
-    genresMenuRef.innerHTML = '';
-    createGenresMenu();
-  }, 150);
+  // genresMenuRef.innerHTML = '';
+  // newApiService.searchGenres().then(() => createGenresMenu());
+  displayChanges();
 
   refs.homeBtn.textContent = 'home';
   refs.libraryBtn.textContent = 'my library';
   refs.input.placeholder = 'Movie search...';
-  refs.inputGenres.firstElementChild.textContent = 'Search by';
-  refs.inputGenres.lastElementChild.firstElementChild.textContent = 'genres';
+  refs.inputGenresLabel.firstChild.textContent = 'Search by ';
   refs.watchedBtn.textContent = 'Watched';
   refs.queueBtn.textContent = 'Queue';
   refs.footerFirstText.textContent = ' All Rights Reserved |';
@@ -66,21 +98,15 @@ function translateToEnglish() {
 }
 
 function translateToRussian() {
-  newApiService.searchGenres();
+  // genresMenuRef.innerHTML = '';
+  // newApiService.searchGenres().then(() => createGenresMenu());
+    displayChanges();
 
-  setTimeout(() => {
-    genresMenuRef.innerHTML = '';
-    createGenresMenu();
-  }, 150);
 
   refs.homeBtn.textContent = 'главная';
   refs.libraryBtn.textContent = 'моя библиотека';
   refs.input.placeholder = 'Поиск фильмов...';
-  setTimeout(() => {
-    document.getElementById('form-for-genre').firstElementChild.textContent = 'Поиск по';
-    document.getElementById('form-for-genre').lastElementChild.firstElementChild.textContent =
-      'жанрам';
-  }, 160);
+  refs.inputGenresLabel.firstChild.textContent = 'Поиск по ';
   refs.watchedBtn.textContent = 'просмотренные';
   refs.queueBtn.textContent = 'в очереди';
   refs.footerFirstText.textContent = ' Все права защищены |';

@@ -261,11 +261,30 @@
 
 // ----------- стили для поиска по жанрам -----------
 #genre {
+  padding-right: 20px;
+  appearance: none;
   color: $white-color;
   border: none;
   outline: none;
   background-color: transparent;
   cursor: pointer;
+}
+
+.select-wrapper{
+  position:relative;
+  cursor:pointer;
+}
+.select-wrapper::after {
+  content:"";
+  position:absolute;
+  top:50%;
+  right:0;
+  transform: translate(0, -50%);
+  width: 0.8em;
+    height: 0.5em;
+    background-color: $orange-color;
+    pointer-events:none;
+    clip-path: polygon(100% 0%, 0 0%, 50% 100%);
 }
 
 #genre option {

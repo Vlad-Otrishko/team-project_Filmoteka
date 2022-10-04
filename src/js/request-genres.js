@@ -1,4 +1,5 @@
 // import moviesList from '../templates/main-cards.hbs';
+import { Pagination } from 'tui-pagination';
 import menuTemplate from '../templates/genres-menu.hbs';
 import ApiService from './apiService.js';
 import Loader from './loader.js';
@@ -6,16 +7,26 @@ import objectTransformations from './objectTransformations.js';
 import resetRender from './resetRender';
 
 const { renderMoviesList, clearGalleryContainer } = resetRender;
-const genresMenuRef = document.querySelector('#genres_menu');
+const genresMenuRef = document.querySelector('#genre');
 const searchForm = document.getElementById('search-form');
 
 const finder = new ApiService();
 const changeLoader = new Loader('.loader');
-
 createGenresMenu();
+
+
+export function genrelanguageSelection() {
+  let langdata;
+  switch (localStorage.getItem('language')) {
+    case 'ru': langdata = { id: 'none', name: 'жанрам' }; break;
+    default: langdata = { id: 'none', name: 'genres' };
+  }
+       return langdata;
+}
 
 export default function createGenresMenu() {
   const genresArray = JSON.parse(localStorage.getItem('Genres'));
+  genresArray.unshift(genrelanguageSelection());
   genresMenuRef.insertAdjacentHTML('beforeend', menuTemplate(genresArray));
 }
 
@@ -38,10 +49,11 @@ function onInput(event) {
   finder
     .searchMovies()
     .then(({ results }) => {
-      window.options.totalItems = +JSON.parse(localStorage.getItem('TotalPagesInLastSearchResult'));
-      window.pagination.reset(
-        +JSON.parse(localStorage.getItem('TotalPagesInLastSearchResult')) * 20,
-      );
+      if (results.total_results > 10000) {
+        pagination.reset(10000);
+      }
+      else { pagination.reset(results.total_results); }
+      pagination.movePageTo(1);
       return objectTransformations(results);
     })
     .then(data => {

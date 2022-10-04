@@ -6,12 +6,12 @@ import resetRender from './resetRender';
 
 const { renderMoviesList, clearGalleryContainer } = resetRender;
 const finder = new ApiService();
-const container = document.getElementById('tui-pagination-container');
+// const container = document.getElementById('tui-pagination-container');
 
 let visiblePages =
   document.documentElement.clientWidth > 767 ? 7 : 2;
 
-window.options = {
+ const options = {
   totalItems: undefined,
   itemsPerPage: 20,
   visiblePages,
@@ -37,29 +37,30 @@ window.options = {
   },
 };
 
-window.options.totalItems = window.options.totalItems || 20000;
+options.totalItems = localStorage.getItem('TotalFound') || 20000;
 
-window.pagination = new Pagination(container, window.options);
+window.pagination = new Pagination('tui-pagination-container', options);//,options
+// console.dir(container);
+
+const container = document.getElementById('tui-pagination-container');
+
 
 //__________________________________________________________________________________________
 container.addEventListener('click', onClick);
 function onClick(e) {
-  // console.log(window.pagination.getCurrentPage());
-  onPagination(window.pagination.getCurrentPage());
+  onPagination(pagination.getCurrentPage());
 }
 
 function onPagination(pageNumber) {
   finder.pageNumber = pageNumber;
   finder.searchType = localStorage.getItem('LastSearchIndex');
   finder.searchRequest = localStorage.getItem('LastQuery');
-  let pagesTotal = localStorage.getItem('TotalPagesInLastSearchResult');
 
   finder
     .searchMovies()
     .then(res => {
-      // options.totalItems = res.total_results; 
-      // console.dir(window.options);
-      pagination.reset(res.total_results);
+      if (res.total_results > 10000) { pagination.reset(10000) }
+      else { pagination.reset(res.total_results); }
       pagination.movePageTo(pageNumber);
       return res;
     })

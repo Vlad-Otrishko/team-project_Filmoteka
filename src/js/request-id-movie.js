@@ -3,10 +3,6 @@ import moviesCardRu from '../templates/modal-movie-ru.hbs';
 import ApiService from './apiService.js';
 import mainCards from '../templates/main-cards.hbs';
 import { trailerRun } from './trailer';
-// import { options } from './tui_pagination';
-// import Pagination from 'tui-pagination';
-
-// const pagination = new Pagination()
 
 const refs = {
   galleryList: document.getElementById('gallery'),
@@ -17,7 +13,6 @@ const refs = {
   body: document.querySelector('body'),
   switchBtn: document.getElementById('language-switch-toggle'),
 };
-
 const finder = new ApiService();
 let tempContainerLastQuery = null; // переменная для временного хранения значения LastQuery из LocalStorage
 
@@ -45,8 +40,6 @@ function onSearchID(e) {
       const watchBtn = document.querySelector('.btn__watch');
       const queueBtn = document.querySelector('.btn__queue');
       const trailerBtn = document.querySelector('#trailer');
-      const currentWatch = refs.library.firstElementChild;
-      const currentQueue = refs.library.lastElementChild;
 
       const popularFilm = JSON.parse(localStorage.getItem('LastSearchResults'));
       const arrayPopFilm = localStorage.getItem('watched');
@@ -73,41 +66,15 @@ function onSearchID(e) {
           event.target.innerHTML === 'Delete from watched' ||
           event.target.innerHTML === 'Удалить из просмотренных'
         ) {
-          const arrObjectWatch = JSON.parse(localStorage.getItem('watched'));
-          let indx = null;
+          deleteFromWatched(event);
 
-          for (let i = 0; i < arrObjectWatch.length; i += 1) {
-            if (+arrObjectWatch[i].id === +event.target.dataset.id) {
-              indx = i;
-            }
-          }
-
-          arrObjectWatch.splice(indx, 1);
-          localStorage.setItem('watched', JSON.stringify(arrObjectWatch));
-          doContentBtnAdd(watchBtn);
         } else {
           // добавление карточки в библиотеку
-          const filteredFilm = popularFilm.filter(film => {
-            if (+film.id === +event.target.dataset.id) {
-              return film;
-            }
-          });
-
-          var a = [];
-          a = JSON.parse(localStorage.getItem('watched')) || [];
-          a.push(filteredFilm[0]);
-
-          localStorage.setItem('watched', JSON.stringify(a));
-          doContentBtnDelete(watchBtn);
+          addToWatched(event);
         }
 
         // ререндер списка карточек в библиотеке, если открытая модалка
-        if (
-          refs.btnLibrary.classList.contains('navigation__btn-current') &&
-          currentWatch.classList.contains('liberary__btn-current')
-        ) {
-          renderCardsList(JSON.parse(localStorage.getItem('watched')));
-        }
+        updateDisplayedLibrary('watched');
       }
 
       // - подмена текст-контента кнопок в зависимости от выбраного языка -
@@ -127,6 +94,41 @@ function onSearchID(e) {
         if (refs.switchBtn.checked) {
           button.textContent = 'Удалить из просмотренных';
         } // Если "Вкл"
+      }
+
+      function addToWatched(event) {
+        const filteredFilm = popularFilm.filter(film => {
+          if (+film.id === +event.target.dataset.id) {
+            return film;
+          }
+        });
+
+        var a = [];
+        a = JSON.parse(localStorage.getItem('watched')) || [];
+        a.push(filteredFilm[0]);
+
+        localStorage.setItem('watched', JSON.stringify(a));
+        if (JSON.parse(localStorage.getItem('queue')) //при добавлении в "просмотренные" удалаем фильм из "очереди",если он там был 
+          .map(el => el.id).includes(filteredFilm[0].id)) {
+          deleteFromQueue(event);
+        };
+        updateDisplayedLibrary('queue');//"визуальное" уделение фильма из очереди
+          doContentBtnDelete(watchBtn);
+       }
+
+      function deleteFromWatched(event) {
+        const arrObjectWatch = JSON.parse(localStorage.getItem('watched'));
+        let indx = null;
+
+        for (let i = 0; i < arrObjectWatch.length; i += 1) {
+          if (+arrObjectWatch[i].id === +event.target.dataset.id) {
+            indx = i;
+          }
+        }
+
+        arrObjectWatch.splice(indx, 1);
+        localStorage.setItem('watched', JSON.stringify(arrObjectWatch));
+        doContentBtnAdd(watchBtn);
       }
       // ================= конец работы кнопки watched =================
 
@@ -150,43 +152,15 @@ function onSearchID(e) {
           event.target.innerHTML === 'Delete from queue' ||
           event.target.innerHTML === 'Удалить из очереди'
         ) {
-          const arrObjectQueue = JSON.parse(localStorage.getItem('queue'));
-          let indx = null;
-
-          for (let i = 0; i < arrObjectQueue.length; i += 1) {
-            if (+arrObjectQueue[i].id === +event.target.dataset.id) {
-              indx = i;
-            }
-          }
-
-          arrObjectQueue.splice(indx, 1);
-          localStorage.setItem('queue', JSON.stringify(arrObjectQueue));
-          doContentBtnAddQueue(queueBtn); // queueBtn.textContent = 'Add to queue';
+          deleteFromQueue(event);
         } else {
           // добавление карточки в библиотеку
-          const filteredFilm = popularFilm.filter(film => {
-            if (+film.id === +event.target.dataset.id) {
-              return film;
-            }
-          });
-
-          let a = [];
-          a = JSON.parse(localStorage.getItem('queue')) || [];
-          a.push(filteredFilm[0]);
-
-          localStorage.setItem('queue', JSON.stringify(a));
-          doContentBtnDeleteQueue(queueBtn); // queueBtn.textContent = 'Delete from queue';
+          addToQueue(event);
         }
 
         // ререндер списка карточек в библиотеке, если открытая модалка
-        if (
-          refs.btnLibrary.classList.contains('navigation__btn-current') &&
-          currentQueue.classList.contains('liberary__btn-current')
-        ) {
-          renderCardsList(JSON.parse(localStorage.getItem('queue')));
-        }
+        updateDisplayedLibrary('queue');
       }
-
       // - подмена текст-контента кнопок в зависимости от выбраного языка -
       function doContentBtnAddQueue(button) {
         if (!refs.switchBtn.checked) {
@@ -205,7 +179,49 @@ function onSearchID(e) {
           button.textContent = 'Удалить из очереди';
         } // Если "Вкл"
       }
+      function addToQueue(event) {
+        const filteredFilm = popularFilm.filter(film => {
+          if (+film.id === +event.target.dataset.id) {
+            return film;
+          }
+        });
+        let a = [];
+        a = JSON.parse(localStorage.getItem('queue')) || [];
+        a.push(filteredFilm[0]);
+
+        localStorage.setItem('queue', JSON.stringify(a));
+        doContentBtnDeleteQueue(queueBtn); // queueBtn.textContent = 'Delete from queue';
+      }
+
+      function deleteFromQueue(event) {
+        const arrObjectQueue = JSON.parse(localStorage.getItem('queue'));
+        let indx = null;
+
+        for (let i = 0; i < arrObjectQueue.length; i += 1) {
+          if (+arrObjectQueue[i].id === +event.target.dataset.id) {
+            indx = i;
+          }
+        }
+        arrObjectQueue.splice(indx, 1);
+        localStorage.setItem('queue', JSON.stringify(arrObjectQueue));
+        doContentBtnAddQueue(queueBtn); // queueBtn.textContent = 'Add to queue';
+      }
       // ================= конец работы кнопки  queue=================
+      //================== функция для обновления отображамого содержимого библиотеки====
+      function updateDisplayedLibrary(currentLibrary) {
+        let selector = undefined;
+        switch (currentLibrary) {
+          case 'watched': selector = refs.library.firstElementChild; break;
+          case 'queue': selector = refs.library.lastElementChild; break;
+            default: selector = undefined;
+        }
+        if (
+          refs.btnLibrary.classList.contains('navigation__btn-current') &&
+          selector.classList.contains('liberary__btn-current')
+        ) {
+          renderCardsList(JSON.parse(localStorage.getItem(currentLibrary)));
+        }
+      }
 
       // ================= начало работы кнопки trailer ==================
       trailerBtn.addEventListener('click', onStartWatch);

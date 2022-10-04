@@ -5,6 +5,7 @@ import objectTransformations from './objectTransformations.js';
 import Loader from './loader.js';
 import resetRender from './resetRender';
 
+
 const { renderMoviesList, clearGalleryContainer } = resetRender;
 
 const changeLoader = new Loader('.loader');
@@ -21,9 +22,11 @@ export function popularMovies() {
   finder
     .searchMovies()
     .then(res => {
-      window.options.totalItems = res.total_results;
-      // console.log(window.options);
-      window.pagination.reset(res.total_results); // pagination.movePageTo(pageNumber);
+      if (res.total_results > 20000) {
+        pagination.reset(20000);
+      } else {
+        pagination.reset(res.total_results);
+      }
       return res;
     })
     .then(({ results }) => {
@@ -37,6 +40,7 @@ export function popularMovies() {
     .then(data => {
       // localStorage.setItem('Popular', JSON.stringify(data));
       localStorage.setItem('LastSearchResults', JSON.stringify(data));
+      return data;
     })
     .catch(err => console.warn(err));
 }
